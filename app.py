@@ -211,8 +211,7 @@ Audio Filename: {data.get('audioFilename', 'N/A')}
 KPI Details:
 {chr(10).join(kpi_lines)}
 
-Total Penalties: {total_penalties}
-Total Fine (PKR): {total_fine}
+
 
 Emotion Summary:
 Top Positive Emotions:
