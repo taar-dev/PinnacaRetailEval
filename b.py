@@ -1,12 +1,13 @@
 import openai
 import requests
 import json
+import os
 
 AUDIO_FILE = "agent.wav"  
-openai.api_key = "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"  
+openai.api_key = os.getenv("OPENAI_API_KEY")  # <-- load from environment
 GPT_MODEL = "gpt-4o-mini" 
 
-client = openai.OpenAI(api_key="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")
+client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 system_prompt = """
 You are a call quality assurance evaluator for technical support calls.
