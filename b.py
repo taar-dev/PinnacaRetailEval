@@ -17,8 +17,7 @@ Your job is to evaluate the agent's performance based on these 16 fixed KPIs.
 For each KPI:
 - Give a score out of 5
 - Note if a penalty applies (Yes/No)
-- Give a short justification
-
+- In the justification, ALWAYS include exact supporting text (quoted verbatim) from the agent's transcription as evidence
 KPI List:
 1. Was the customer greeted with Good [Time of Day] Pinnaca Retail Solutions,[Engineer Speaking], How May I Help?
 2. Was the customer asked for their Name, Company, & Location?
@@ -46,7 +45,7 @@ MAKEE SURE TO RETURN OUTPUT IN THIS EXACT JSON format:
       "description": "<brief KPI description>",
       "score": <0-5>,
       "penalty": <true|false>,
-      "justification": "<short explanation>"
+      "justification": "<short explanation + exact quoted text from the agent's transcription>"
     },
     ...
   ]
