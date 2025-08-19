@@ -7,6 +7,7 @@ import Link from "next/link"
 import { RecentAnalyses } from "@/components/recent-analyses"
 import { StatsCards } from "@/components/stats-cards"
 import { Leaderboard } from "@/components/leaderboard"
+import { EmotionAnalytics } from "@/components/emotion-analytics"
 
 export default function DashboardPage() {
   return (
@@ -36,6 +37,10 @@ export default function DashboardPage() {
         <div className="space-y-6">
           <Suspense fallback={<LeaderboardSkeleton />}>
             <Leaderboard />
+          </Suspense>
+
+          <Suspense fallback={<EmotionAnalyticsSkeleton />}>
+            <EmotionAnalytics />
           </Suspense>
 
           <Card>
@@ -127,6 +132,32 @@ function LeaderboardSkeleton() {
                 <Skeleton className="h-4 w-24" />
               </div>
               <Skeleton className="h-6 w-12" />
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  )
+}
+
+function EmotionAnalyticsSkeleton() {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Skeleton className="h-5 w-5" />
+          <Skeleton className="h-5 w-32" />
+        </CardTitle>
+        <CardDescription>
+          <Skeleton className="h-4 w-40" />
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-4">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="space-y-2">
+              <Skeleton className="h-4 w-24" />
+              <Skeleton className="h-2 w-full" />
             </div>
           ))}
         </div>

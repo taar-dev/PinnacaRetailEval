@@ -4,8 +4,6 @@ from a import split_stereo_to_mono
 from b import transcribe_audio, evaluate_transcript
 from c import run_hume_pipeline
 from d import extract_emotion_scores, summarize_emotions
-from e import detect_repeated_mistakes
-
 import os
 import smtplib
 from email.mime.text import MIMEText
@@ -211,7 +209,8 @@ Audio Filename: {data.get('audioFilename', 'N/A')}
 KPI Details:
 {chr(10).join(kpi_lines)}
 
-
+Total Penalties: {total_penalties}
+Total Fine (PKR): {total_fine}
 
 Emotion Summary:
 Top Positive Emotions:
@@ -460,22 +459,6 @@ def get_unique_agents():
     except Exception as e:
         print(f"Error fetching unique agents: {e}")
         return jsonify({"error": str(e)}), 500
-    
-@app.route("/api/repeated-mistakes/<string:agent_name>", methods=["GET"])
-def api_repeated_mistakes(agent_name):
-    """
-    Returns repeated KPI mistakes for a given agent.
-    """
-    try:
-        repeated = detect_repeated_mistakes(conn, agent_name)
-        return jsonify({
-            "agent": agent_name,
-            "repeated_mistakes": repeated
-        })
-    except Exception as e:
-        print(f"Error detecting repeated mistakes for {agent_name}: {e}")
-        return jsonify({"error": str(e)}), 500
-    
 
 @app.route("/leaderboard", methods=["GET"])
 def leaderboard():
@@ -502,6 +485,88 @@ def leaderboard():
         print(f"Leaderboard error: {e}")
         return jsonify({"error": str(e)}), 500
 
+@app.route("/api/emotion-analytics", methods=["GET"])
+def emotion_analytics():
+    """Get aggregated emotion analytics across all analyses"""
+    try:
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT emotion_summary FROM analysis_results
+                WHERE emotion_summary IS NOT NULL AND emotion_summary != 'null'
+            """)
+            rows = cur.fetchall()
+
+            if not rows:
+                return jsonify({
+                    "total_analyses": 0,
+                    "top_positive_emotions": [],
+                    "top_negative_emotions": []
+                })
+
+            positive_emotions = {}
+            negative_emotions = {}
+            total_analyses = len(rows)
+
+            for row in rows:
+                try:
+                    emotion_data = row[0]
+                    if isinstance(emotion_data, str):
+                        emotion_data = json.loads(emotion_data)
+
+                    # Process positive emotions
+                    if "top_positive_emotions" in emotion_data:
+                        for emotion in emotion_data["top_positive_emotions"]:
+                            if isinstance(emotion, list) and len(emotion) >= 2:
+                                name, score = emotion[0], float(emotion[1])
+                                if name not in positive_emotions:
+                                    positive_emotions[name] = {"scores": [], "frequency": 0}
+                                positive_emotions[name]["scores"].append(score)
+                                positive_emotions[name]["frequency"] += 1
+
+                    # Process negative emotions
+                    if "top_negative_emotions" in emotion_data:
+                        for emotion in emotion_data["top_negative_emotions"]:
+                            if isinstance(emotion, list) and len(emotion) >= 2:
+                                name, score = emotion[0], float(emotion[1])
+                                if name not in negative_emotions:
+                                    negative_emotions[name] = {"scores": [], "frequency": 0}
+                                negative_emotions[name]["scores"].append(score)
+                                negative_emotions[name]["frequency"] += 1
+
+                except (json.JSONDecodeError, ValueError, TypeError, KeyError) as e:
+                    print(f"Error processing emotion data: {e}")
+                    continue
+
+            # Calculate averages and sort by frequency
+            top_positive = []
+            for emotion, data in positive_emotions.items():
+                avg_score = round(sum(data["scores"]) / len(data["scores"]), 1)
+                top_positive.append({
+                    "emotion": emotion,
+                    "avg_score": avg_score,
+                    "frequency": data["frequency"]
+                })
+            top_positive.sort(key=lambda x: x["frequency"], reverse=True)
+
+            top_negative = []
+            for emotion, data in negative_emotions.items():
+                avg_score = round(sum(data["scores"]) / len(data["scores"]), 1)
+                top_negative.append({
+                    "emotion": emotion,
+                    "avg_score": avg_score,
+                    "frequency": data["frequency"]
+                })
+            top_negative.sort(key=lambda x: x["frequency"], reverse=True)
+
+            return jsonify({
+                "total_analyses": total_analyses,
+                "top_positive_emotions": top_positive[:5],  # Top 5 most frequent
+                "top_negative_emotions": top_negative[:5]   # Top 5 most frequent
+            })
+
+    except Exception as e:
+        print(f"Emotion analytics error: {e}")
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == "__main__":
     print("🚀 Starting Flask Backend on http://localhost:5000")
